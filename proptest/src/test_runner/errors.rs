@@ -33,9 +33,6 @@ pub enum TestCaseError {
     Fail(Reason),
 }
 
-/// Convenience for the type returned by test cases.
-pub type TestCaseResult = Result<(), TestCaseError>;
-
 impl TestCaseError {
     /// Rejects the generated test input as invalid for this test case. This
     /// does not count as a test failure (nor a success); rather, it simply
@@ -74,6 +71,48 @@ impl<E: ::std::error::Error> From<E> for TestCaseError {
     }
 }
 
+/// Convenience for the type returned by test cases.
+pub type TestCaseResult = Result<(), TestCaseError>;
+
+/// Implemented by types which can be converted to [`TestCaseResult`].
+///
+/// [`TestCaseResult`]: type.TestCaseResult.html
+pub trait Testable {
+    /// Convert to [`TestCaseResult`].
+    ///
+    /// [`TestCaseResult`]: type.TestCaseResult.html
+    fn result(self) -> TestCaseResult;
+}
+
+impl Testable for () {
+    fn result(self) -> TestCaseResult {
+        Ok(())
+    }
+}
+
+impl Testable for bool {
+    fn result(self) -> TestCaseResult {
+        if self {
+            Ok(())
+        } else {
+            Err(TestCaseError::fail("returned false"))
+        }
+    }
+}
+
+impl<T, E> Testable for Result<T, E>
+where
+    T: Testable,
+    E: Into<TestCaseError>,
+{
+    fn result(self) -> TestCaseResult {
+        match self {
+            Ok(t) => t.result(),
+            Err(e) => Err(e.into()),
+        }
+    }
+}
+
 /// A failure state from running test cases for a single test.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TestError<T> {
@@ -107,4 +146,29 @@ impl<T: fmt::Debug> ::std::error::Error for TestError<T> {
             TestError::Fail(..) => "Fail",
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_case_result_testable() {
+        is_testable::<TestCaseResult>();
+    }
+
+    #[test]
+    fn result_with_test_case_error_testable() {
+        is_testable::<Result<bool, TestCaseError>>();
+        is_testable::<Result<TestCaseResult, TestCaseError>>();
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn result_with_std_error_testable() {
+        is_testable::<Result<bool, ::std::io::Error>>();
+        is_testable::<Result<(), ::std::num::TryFromIntError>>();
+    }
+
+    fn is_testable<T: Testable>() {}
 }

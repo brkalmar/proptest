@@ -1,0 +1,30 @@
+[package]
+name = "proptest-macro"
+version = "0.1.0"
+authors = ["Bence Kalmar <bkalmar1996@gmail.com>"]
+license = "MIT/Apache-2.0"
+
+repository = "https://github.com/altsysrq/proptest"
+
+categories = ["development-tools::testing"]
+
+edition = "2018"
+
+description = """
+Attribute macro for easily defining tests in proptest.
+"""
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proptest = { version = "0.9.4", path = "../proptest" }
+quote = "1"
+proc-macro2 = "1"
+
+[dependencies.syn]
+version = "1"
+default-features = false
+features = ["clone-impls", "extra-traits", "fold", "full", "parsing", "printing"]
